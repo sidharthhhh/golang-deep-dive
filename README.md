@@ -100,10 +100,16 @@ Welcome to the **Golang Deep Dive**. This is a structured, 20-day journey to mas
   - System Insight: Flame graphs, GC pause analysis.
   - Code: Finding and fixing a memory leak.
 
-### **LEVEL 7 — Advanced & Modern Backend**
-- [ ] **Day 20: Advanced Patterns (gRPC, Observability)**
-  - Concept: gRPC vs REST, structured logging, metrics.
-  - System Insight: Protobuf binary efficiency, distributed tracing.
+### **LEVEL 7 — Advanced Design Patterns**
+- [ ] **Day 20: Application Design Patterns**
+  - Concept: Functional Options, Singleton, Factory.
+  - System Insight: Compiler inlining trade-offs with abstractions.
+  - Code: Implementing the Options Pattern and Hexagonal Architecture helpers.
+
+### **LEVEL 8 — Modern Backend (Bonus)**
+- [ ] **Day 21: Microservices, gRPC & Observability**
+  - Concept: gRPC vs REST, structured logging, distributed tracing.
+  - System Insight: Protobuf binary efficiency.
   - Code: Simple gRPC service with OpenTelemetry.
 
 ---
