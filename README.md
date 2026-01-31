@@ -17,10 +17,10 @@ Welcome to the **Golang Deep Dive**. This is a structured, 20-day journey to mas
   - [x] Concept: Compilation flow, static linking, runtime initiation.
   - [x] System Insight: OS interface, syscalls.
   - [x] Code: Hello World, Compilation Simulation, Runtime introspection (Refactored to subdirectories).
-- [ ] **Day 2: Variables, Types, and Memory Layout**
-  - Concept: Zero values, type safety, memory allocation.
-  - System Insight: Stack vs Heap allocation, memory alignment.
-  - Code: Variable shadowing, type conversions, memory address inspection.
+- [x] **Day 2: Variables, Types, and Memory Layout**
+  - [x] Concept: Zero values, type safety, memory allocation.
+  - [x] System Insight: Stack vs Heap allocation, memory alignment.
+  - [x] Code: Variable shadowing, type conversions, memory address inspection.
 - [ ] **Day 3: Control Flow and Functions (Stack Frames)**
   - Concept: `if`, `for`, `switch`, function calls.
   - System Insight: Stack frames, return addresses, defer execution order.
