@@ -10,7 +10,7 @@ import (
 	"github.com/sidharthhhh/go-auth-service/internal/config"
 )
 
-func NewMySQLConnection(cfg *config.Config) *sql.DB {
+func NewMySQLConnection(cfg *config.Config) (*sql.DB, error) {
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
 		cfg.MysqlUser,
@@ -22,15 +22,15 @@ func NewMySQLConnection(cfg *config.Config) *sql.DB {
 
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		log.Fatal("Database connection error:", err)
+		return nil, fmt.Errorf("database connection error: %w", err)
 	}
 
 	err = db.Ping()
 	if err != nil {
-		log.Fatal("Database ping error:", err)
+		return nil, fmt.Errorf("database ping error: %w", err)
 	}
 
 	log.Println("MySQL connected successfully")
 
-	return db
+	return db, nil
 }

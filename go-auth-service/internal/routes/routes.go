@@ -1,28 +1,26 @@
 package routes
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/sidharthhhh/go-auth-service/internal/handlers"
+)
 
-func SetupRouter() *gin.Engine {
+func SetupRouter(authHandler *handlers.AuthHandler) *gin.Engine {
 
 	router := gin.Default()
 
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"status": "ok",
+			"status":  "ok",
 			"service": "go-auth-service",
 		})
 	})
 
 	auth := router.Group("/auth")
 	{
-		auth.POST("/register", func(c *gin.Context) {
-			c.JSON(200, gin.H{"message": "register endpoint"})
-		})
-
-		auth.POST("/login", func(c *gin.Context) {
-			c.JSON(200, gin.H{"message": "login endpoint"})
-		})
+		auth.POST("/register", authHandler.Register)
+		auth.POST("/login", authHandler.Login)
 	}
 
 	return router
