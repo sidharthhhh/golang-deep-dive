@@ -2,35 +2,89 @@ package main
 
 import (
 	"log"
+	"os"
 
+	"github.com/gin-gonic/gin"
 	"github.com/sidharthhhh/go-auth-service/internal/config"
 	"github.com/sidharthhhh/go-auth-service/internal/database"
 	"github.com/sidharthhhh/go-auth-service/internal/handlers"
 	"github.com/sidharthhhh/go-auth-service/internal/repository"
 	"github.com/sidharthhhh/go-auth-service/internal/routes"
 	"github.com/sidharthhhh/go-auth-service/internal/service"
+	"github.com/sidharthhhh/go-auth-service/internal/utils"
 )
 
 func main() {
-
+	// Load configuration
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatal("Config error:", err)
 	}
 
+	// Setup logger
+	logger, err := utils.GetLoggerFromEnv()
+	if err != nil {
+		log.Fatal("Logger error:", err)
+	}
+	defer logger.Sync()
+
+	logger.Info("Starting auth service",
+		utils.String("version", getVersion()),
+		utils.String("port", cfg.AppPort),
+	)
+
+	// Connect to database
 	db, err := database.NewMySQLConnection(cfg)
 	if err != nil {
-		log.Fatal("Database error:", err)
+		logger.Fatal("Database error", utils.Error(err))
 	}
 	defer db.Close()
 
+	logger.Info("Database connected successfully")
+
+	// Initialize repositories
 	userRepo := repository.NewUserRepository(db)
-	authService := service.NewAuthService(userRepo, cfg.JWTSecret)
+	tokenRepo := repository.NewTokenRepository(db)
+
+	// Initialize services
+	authService := service.NewAuthService(userRepo, tokenRepo, cfg.JWTSecret, cfg.SuperAdminCode)
+	tokenService := service.NewTokenService(tokenRepo, cfg.JWTSecret)
+	userService := service.NewUserService(userRepo)
+
+	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
+	tokenHandler := handlers.NewTokenHandler(tokenService, logger)
+	userHandler := handlers.NewUserHandler(userService, logger)
+	healthHandler := handlers.NewHealthHandler(db, logger, getVersion())
 
-	router := routes.SetupRouter(authHandler)
+	// Setup router
+	router := gin.New()
 
-	log.Println("Server running on port", cfg.AppPort)
+	// Create handlers struct
+	v1Handlers := &routes.V1Handlers{
+		Auth:   authHandler,
+		Token:  tokenHandler,
+		User:   userHandler,
+		Health: healthHandler,
+	}
 
-	router.Run(":" + cfg.AppPort)
+	// Load CORS config
+	corsConfig := config.LoadCORSConfig()
+
+	// Setup all routes
+	routes.SetupV1Routes(router, v1Handlers, cfg.JWTSecret, tokenRepo, corsConfig, logger)
+
+	// Start server
+	logger.Info("Server starting", utils.String("port", cfg.AppPort))
+	if err := router.Run(":" + cfg.AppPort); err != nil {
+		logger.Fatal("Server error", utils.Error(err))
+	}
+}
+
+func getVersion() string {
+	version := os.Getenv("APP_VERSION")
+	if version == "" {
+		return "1.0.0"
+	}
+	return version
 }

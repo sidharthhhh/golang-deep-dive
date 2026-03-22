@@ -10,13 +10,14 @@ import (
 )
 
 type Config struct {
-	AppPort       string
-	MysqlHost     string
-	MysqlPort     string
-	MysqlUser     string
-	MysqlPassword string
-	MysqlDB       string
-	JWTSecret     string
+	AppPort        string
+	MysqlHost      string
+	MysqlPort      string
+	MysqlUser      string
+	MysqlPassword  string
+	MysqlDB        string
+	JWTSecret      string
+	SuperAdminCode string
 }
 
 func LoadConfig() (*Config, error) {
@@ -27,13 +28,14 @@ func LoadConfig() (*Config, error) {
 	}
 
 	cfg := &Config{
-		AppPort:       os.Getenv("APP_PORT"),
-		MysqlHost:     os.Getenv("MYSQL_HOST"),
-		MysqlPort:     os.Getenv("MYSQL_PORT"),
-		MysqlUser:     os.Getenv("MYSQL_USER"),
-		MysqlPassword: os.Getenv("MYSQL_PASSWORD"),
-		MysqlDB:       os.Getenv("MYSQL_DB"),
-		JWTSecret:     os.Getenv("JWT_SECRET"),
+		AppPort:        os.Getenv("APP_PORT"),
+		MysqlHost:      os.Getenv("MYSQL_HOST"),
+		MysqlPort:      os.Getenv("MYSQL_PORT"),
+		MysqlUser:      os.Getenv("MYSQL_USER"),
+		MysqlPassword:  os.Getenv("MYSQL_PASSWORD"),
+		MysqlDB:        os.Getenv("MYSQL_DB"),
+		JWTSecret:      os.Getenv("JWT_SECRET"),
+		SuperAdminCode: os.Getenv("SUPER_ADMIN_CODE"),
 	}
 
 	if err := cfg.Validate(); err != nil {
@@ -66,6 +68,9 @@ func (c *Config) Validate() error {
 	}
 	if c.JWTSecret == "" {
 		missingFields = append(missingFields, "JWT_SECRET")
+	}
+	if c.SuperAdminCode == "" {
+		missingFields = append(missingFields, "SUPER_ADMIN_CODE")
 	}
 
 	if len(missingFields) > 0 {

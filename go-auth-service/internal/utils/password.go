@@ -1,13 +1,16 @@
 package utils
 
 import (
+	"errors"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var ErrPasswordTooShort = errors.New("password is too short")
 
 // HashPassword hashes a plaintext password using bcrypt with cost factor 12
 func HashPassword(password string) (string, error) {
 	if password == "" {
-		return "", bcrypt.ErrPasswordTooShort
+		return "", ErrPasswordTooShort
 	}
 
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), 12)
