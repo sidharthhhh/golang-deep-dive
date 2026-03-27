@@ -1,8 +1,8 @@
--- Create token blacklist table for logout functionality
+-- Create token blacklist table
 CREATE TABLE IF NOT EXISTS token_blacklist (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    token_jti VARCHAR(255) NOT NULL UNIQUE,
-    user_id INT NOT NULL,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    token_jti CHAR(36) NOT NULL UNIQUE,
+    user_id BIGINT NOT NULL,
     blacklisted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP NOT NULL,
     INDEX idx_token_jti (token_jti),

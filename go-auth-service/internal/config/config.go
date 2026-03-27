@@ -11,6 +11,7 @@ import (
 
 type Config struct {
 	AppPort        string
+	AppEnv         string
 	MysqlHost      string
 	MysqlPort      string
 	MysqlUser      string
@@ -29,6 +30,7 @@ func LoadConfig() (*Config, error) {
 
 	cfg := &Config{
 		AppPort:        os.Getenv("APP_PORT"),
+		AppEnv:         os.Getenv("APP_ENV"),
 		MysqlHost:      os.Getenv("MYSQL_HOST"),
 		MysqlPort:      os.Getenv("MYSQL_PORT"),
 		MysqlUser:      os.Getenv("MYSQL_USER"),

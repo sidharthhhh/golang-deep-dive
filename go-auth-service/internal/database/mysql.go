@@ -12,7 +12,7 @@ import (
 
 func NewMySQLConnection(cfg *config.Config) (*sql.DB, error) {
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local",
 		cfg.MysqlUser,
 		cfg.MysqlPassword,
 		cfg.MysqlHost,

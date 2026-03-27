@@ -54,10 +54,11 @@ func (r *userRepository) CreateUser(ctx context.Context, email, passwordHash str
 }
 
 func (r *userRepository) FindUserByEmail(ctx context.Context, email string) (*models.User, error) {
-	query := `SELECT id, email, password_hash, role, is_verified, created_at, updated_at 
+	query := `SELECT id, email, password_hash, role, is_verified, created_at, updated_at, password_changed_at 
 	          FROM users WHERE email = ?`
 
 	user := &models.User{}
+	var passwordChangedAt sql.NullTime
 	err := r.db.QueryRowContext(ctx, query, email).Scan(
 		&user.ID,
 		&user.Email,
@@ -66,10 +67,15 @@ func (r *userRepository) FindUserByEmail(ctx context.Context, email string) (*mo
 		&user.IsVerified,
 		&user.CreatedAt,
 		&user.UpdatedAt,
+		&passwordChangedAt,
 	)
 
 	if err != nil {
 		return nil, err
+	}
+
+	if passwordChangedAt.Valid {
+		user.PasswordChangedAt = &passwordChangedAt.Time
 	}
 
 	return user, nil
@@ -83,10 +89,11 @@ func (r *userRepository) UpdateUserRole(ctx context.Context, userID int, role mo
 
 
 func (r *userRepository) GetUserByID(ctx context.Context, userID int64) (*models.User, error) {
-	query := `SELECT id, email, password_hash, role, is_verified, created_at, updated_at 
+	query := `SELECT id, email, password_hash, role, is_verified, created_at, updated_at, password_changed_at 
 	          FROM users WHERE id = ?`
 
 	user := &models.User{}
+	var passwordChangedAt sql.NullTime
 	err := r.db.QueryRowContext(ctx, query, userID).Scan(
 		&user.ID,
 		&user.Email,
@@ -95,10 +102,15 @@ func (r *userRepository) GetUserByID(ctx context.Context, userID int64) (*models
 		&user.IsVerified,
 		&user.CreatedAt,
 		&user.UpdatedAt,
+		&passwordChangedAt,
 	)
 
 	if err != nil {
 		return nil, err
+	}
+
+	if passwordChangedAt.Valid {
+		user.PasswordChangedAt = &passwordChangedAt.Time
 	}
 
 	return user, nil

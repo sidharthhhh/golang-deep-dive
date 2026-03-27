@@ -14,9 +14,10 @@ func SetupAdminRoutes(
 	userHandler *handlers.UserHandler,
 	jwtSecret string,
 	tokenRepo repository.TokenRepository,
+	userRepo repository.UserRepository,
 ) {
 	admin := router.Group("/admin")
-	admin.Use(middleware.AuthMiddleware(jwtSecret, tokenRepo))
+	admin.Use(middleware.AuthMiddleware(jwtSecret, tokenRepo, userRepo))
 	admin.Use(middleware.RequireRole("admin", "super_admin"))
 	{
 		// Dashboard
@@ -44,7 +45,7 @@ func SetupAdminRoutes(
 
 	// Super admin only routes
 	superAdmin := router.Group("/super-admin")
-	superAdmin.Use(middleware.AuthMiddleware(jwtSecret, tokenRepo))
+	superAdmin.Use(middleware.AuthMiddleware(jwtSecret, tokenRepo, userRepo))
 	superAdmin.Use(middleware.RequireRole("super_admin"))
 	{
 		superAdmin.POST("/promote", authHandler.PromoteToAdmin)

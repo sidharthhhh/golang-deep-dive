@@ -1,0 +1,6 @@
+{
+  "email": "admin@example.com",
+  "password": "adminpass123",
+  "super_admin_code": "SUPER_SECRET_ADMIN_CODE_2024"
+}
+

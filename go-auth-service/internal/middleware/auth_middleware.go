@@ -9,7 +9,7 @@ import (
 	"github.com/sidharthhhh/go-auth-service/internal/utils"
 )
 
-func AuthMiddleware(jwtSecret string, tokenRepo repository.TokenRepository) gin.HandlerFunc {
+func AuthMiddleware(jwtSecret string, tokenRepo repository.TokenRepository, userRepo repository.UserRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -45,6 +45,17 @@ func AuthMiddleware(jwtSecret string, tokenRepo repository.TokenRepository) gin.
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "token has been revoked"})
 			c.Abort()
 			return
+		}
+
+		// Check if password was changed after token was issued
+		user, err := userRepo.GetUserByID(c.Request.Context(), int64(claims.UserID))
+		if err == nil && user.PasswordChangedAt != nil {
+			// If token was issued before password change, invalidate it
+			if claims.IssuedAt.Time.Before(*user.PasswordChangedAt) {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "token invalidated due to password change"})
+				c.Abort()
+				return
+			}
 		}
 
 		// Set user info in context

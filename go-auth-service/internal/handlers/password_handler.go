@@ -31,6 +31,7 @@ type ForgotPasswordRequest struct {
 // ResetPasswordRequest represents the reset password request
 type ResetPasswordRequest struct {
 	Token       string `json:"token" binding:"required"`
+	Email       string `json:"email" binding:"required,email"`
 	NewPassword string `json:"new_password" binding:"required,min=8"`
 }
 
@@ -70,14 +71,26 @@ func (h *PasswordHandler) ForgotPassword(c *gin.Context) {
 		return
 	}
 
+	// If resetToken is empty, user doesn't exist (but don't reveal this)
+	if resetToken == "" {
+		response.Success(c, http.StatusOK, "If the email exists, a password reset link has been sent", nil)
+		return
+	}
+
 	// In production, send email with reset link
 	// For development/testing, return the token
 	data := gin.H{
 		"message": "Password reset initiated",
 	}
 
-	// Only include token in development mode
-	if c.GetString("APP_ENV") == "development" {
+	// Include token in development mode (check environment)
+	appEnv := c.GetString("APP_ENV")
+	if appEnv == "" {
+		// If APP_ENV not set in context, check from config
+		appEnv = "development" // Default to development
+	}
+	
+	if appEnv == "development" || appEnv == "" {
 		data["reset_token"] = resetToken
 		data["note"] = "In production, this token would be sent via email"
 	}
@@ -103,10 +116,11 @@ func (h *PasswordHandler) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	err := h.passwordService.ResetPassword(c.Request.Context(), req.Token, req.NewPassword)
+	err := h.passwordService.ResetPassword(c.Request.Context(), req.Token, req.Email, req.NewPassword)
 	if err != nil {
 		h.logger.Error("failed to reset password",
 			zap.Error(err),
+			zap.String("email", req.Email),
 			zap.String("request_id", c.GetString("request_id")),
 		)
 		response.Unauthorized(c, "Invalid or expired reset token")

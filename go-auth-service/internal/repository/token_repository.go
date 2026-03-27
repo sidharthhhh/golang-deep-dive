@@ -45,8 +45,9 @@ func (r *tokenRepository) CleanupExpiredTokens(ctx context.Context) error {
 
 
 func (r *tokenRepository) BlacklistAllUserTokens(ctx context.Context, userID int) error {
-	// This would require tracking all active tokens per user
-	// For now, we'll just return nil
-	// In production, you'd want to store active tokens and blacklist them all
-	return nil
+	// Instead of blacklisting individual tokens, we update the user's password_changed_at timestamp
+	// The auth middleware will check if tokens were issued before this timestamp
+	query := `UPDATE users SET password_changed_at = ? WHERE id = ?`
+	_, err := r.db.ExecContext(ctx, query, time.Now(), userID)
+	return err
 }

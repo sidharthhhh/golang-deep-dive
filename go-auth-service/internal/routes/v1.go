@@ -11,10 +11,11 @@ import (
 
 // V1Handlers holds all v1 handlers
 type V1Handlers struct {
-	Auth   *handlers.AuthHandler
-	Token  *handlers.TokenHandler
-	User   *handlers.UserHandler
-	Health *handlers.HealthHandler
+	Auth     *handlers.AuthHandler
+	Token    *handlers.TokenHandler
+	User     *handlers.UserHandler
+	Password *handlers.PasswordHandler
+	Health   *handlers.HealthHandler
 }
 
 // SetupV1Routes sets up all v1 API routes
@@ -23,6 +24,7 @@ func SetupV1Routes(
 	handlers *V1Handlers,
 	jwtSecret string,
 	tokenRepo repository.TokenRepository,
+	userRepo repository.UserRepository,
 	corsConfig *config.CORSConfig,
 	logger *zap.Logger,
 ) {
@@ -30,6 +32,13 @@ func SetupV1Routes(
 	router.Use(middleware.RequestIDMiddleware())
 	router.Use(middleware.LoggingMiddleware(logger))
 	router.Use(middleware.CORSMiddleware(corsConfig))
+	
+	// Set APP_ENV in context for all requests
+	router.Use(func(c *gin.Context) {
+		cfg, _ := config.LoadConfig()
+		c.Set("APP_ENV", cfg.AppEnv)
+		c.Next()
+	})
 
 	// Health routes (no versioning)
 	SetupHealthRoutes(router, handlers.Health)
@@ -38,9 +47,9 @@ func SetupV1Routes(
 	v1 := router.Group("/v1")
 	{
 		// Auth routes
-		SetupAuthRoutes(v1, handlers.Auth, handlers.Token, jwtSecret, tokenRepo)
+		SetupAuthRoutes(v1, handlers.Auth, handlers.Token, handlers.Password, jwtSecret, tokenRepo, userRepo)
 
 		// Admin routes
-		SetupAdminRoutes(v1, handlers.Auth, handlers.User, jwtSecret, tokenRepo)
+		SetupAdminRoutes(v1, handlers.Auth, handlers.User, jwtSecret, tokenRepo, userRepo)
 	}
 }

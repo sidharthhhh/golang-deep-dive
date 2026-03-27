@@ -45,16 +45,19 @@ func main() {
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(db)
 	tokenRepo := repository.NewTokenRepository(db)
+	passwordResetRepo := repository.NewPasswordResetRepository(db)
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, tokenRepo, cfg.JWTSecret, cfg.SuperAdminCode)
 	tokenService := service.NewTokenService(tokenRepo, cfg.JWTSecret)
 	userService := service.NewUserService(userRepo)
+	passwordService := service.NewPasswordService(userRepo, passwordResetRepo, tokenRepo)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	tokenHandler := handlers.NewTokenHandler(tokenService, logger)
 	userHandler := handlers.NewUserHandler(userService, logger)
+	passwordHandler := handlers.NewPasswordHandler(passwordService, logger)
 	healthHandler := handlers.NewHealthHandler(db, logger, getVersion())
 
 	// Setup router
@@ -62,17 +65,24 @@ func main() {
 
 	// Create handlers struct
 	v1Handlers := &routes.V1Handlers{
-		Auth:   authHandler,
-		Token:  tokenHandler,
-		User:   userHandler,
-		Health: healthHandler,
+		Auth:     authHandler,
+		Token:    tokenHandler,
+		User:     userHandler,
+		Password: passwordHandler,
+		Health:   healthHandler,
 	}
 
 	// Load CORS config
 	corsConfig := config.LoadCORSConfig()
 
 	// Setup all routes
-	routes.SetupV1Routes(router, v1Handlers, cfg.JWTSecret, tokenRepo, corsConfig, logger)
+	routes.SetupV1Routes(router, v1Handlers, cfg.JWTSecret, tokenRepo, userRepo, corsConfig, logger)
+
+	// Set APP_ENV globally for handlers
+	router.Use(func(c *gin.Context) {
+		c.Set("APP_ENV", cfg.AppEnv)
+		c.Next()
+	})
 
 	// Start server
 	logger.Info("Server starting", utils.String("port", cfg.AppPort))

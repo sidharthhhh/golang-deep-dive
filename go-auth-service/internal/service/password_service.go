@@ -13,7 +13,7 @@ import (
 // PasswordService handles password-related operations
 type PasswordService interface {
 	InitiatePasswordReset(ctx context.Context, email string) (string, error)
-	ResetPassword(ctx context.Context, token, newPassword string) error
+	ResetPassword(ctx context.Context, token, email, newPassword string) error
 	ChangePassword(ctx context.Context, userID int64, oldPassword, newPassword string) error
 }
 
@@ -42,9 +42,10 @@ func (s *passwordService) InitiatePasswordReset(ctx context.Context, email strin
 	user, err := s.userRepo.FindUserByEmail(ctx, email)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			// Don't reveal if user exists
+			// Don't reveal if user exists - return empty token
 			return "", nil
 		}
+		// Log actual error but return empty token for security
 		return "", err
 	}
 
@@ -58,6 +59,7 @@ func (s *passwordService) InitiatePasswordReset(ctx context.Context, email strin
 	expiresAt := time.Now().Add(1 * time.Hour)
 	err = s.passwordRepo.CreatePasswordResetToken(ctx, user.ID, resetToken, expiresAt)
 	if err != nil {
+		// Return error so handler can log it
 		return "", err
 	}
 
@@ -68,10 +70,20 @@ func (s *passwordService) InitiatePasswordReset(ctx context.Context, email strin
 }
 
 // ResetPassword resets the password using a reset token
-func (s *passwordService) ResetPassword(ctx context.Context, token, newPassword string) error {
+func (s *passwordService) ResetPassword(ctx context.Context, token, email, newPassword string) error {
 	// Validate reset token
 	userID, err := s.passwordRepo.ValidatePasswordResetToken(ctx, token)
 	if err != nil {
+		return apperrors.ErrTokenInvalid
+	}
+
+	// Verify the email matches the user who requested the reset
+	user, err := s.userRepo.GetUserByID(ctx, userID)
+	if err != nil {
+		return apperrors.ErrTokenInvalid
+	}
+	
+	if user.Email != email {
 		return apperrors.ErrTokenInvalid
 	}
 
@@ -129,8 +141,12 @@ func (s *passwordService) ChangePassword(ctx context.Context, userID int64, oldP
 		return err
 	}
 
-	// Optionally invalidate all sessions except current one
-	// For now, we'll keep all sessions active
+	// Invalidate all user sessions (logout from all devices)
+	err = s.tokenRepo.BlacklistAllUserTokens(ctx, int(userID))
+	if err != nil {
+		// Log error but don't fail the password change
+		return nil
+	}
 
 	return nil
 }
