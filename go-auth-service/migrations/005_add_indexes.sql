@@ -1,8 +1,7 @@
 -- Add additional performance indexes
 -- This migration adds indexes for common query patterns
-
--- Index for user lookup by verification status
-CREATE INDEX IF NOT EXISTS idx_users_is_verified ON users(is_verified);
+-- Note: Base indexes (idx_email, idx_role, idx_is_verified, idx_password_changed_at) 
+-- are already created in 001_create_users_table.sql
 
 -- Index for token blacklist cleanup queries
 CREATE INDEX IF NOT EXISTS idx_token_blacklist_expires ON token_blacklist(expires_at, blacklisted_at);

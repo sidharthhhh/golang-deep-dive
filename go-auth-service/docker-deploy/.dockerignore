@@ -1,0 +1,47 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+auth-service
+test.exe
+bin/
+
+# Test artifacts
+*.test
+*.out
+coverage.*
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# Docker (avoid recursive context)
+docker-deploy/
+**/Dockerfile
+**/docker-compose*.yml
+**/.dockerignore
+
+# Kubernetes manifests
+k8s/
+
+# Documentation
+*.md
+docs/
+plan/
+
+# Credentials & env
+.env
+credd.txt
+
+# OS files
+.DS_Store
+Thumbs.db

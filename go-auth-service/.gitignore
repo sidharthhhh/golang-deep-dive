@@ -1,0 +1,33 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+auth-service
+test.exe
+bin/
+
+# Test artifacts
+*.test
+*.out
+coverage.*
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Credentials
+.env
+credd.txt
+k8s/secrets.yaml
+
+# Documentation build artifacts
+docs/

@@ -6,6 +6,9 @@ CREATE TABLE IF NOT EXISTS users (
     is_verified BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    password_changed_at TIMESTAMP NULL DEFAULT NULL,
     INDEX idx_email (email),
-    INDEX idx_role (role)
+    INDEX idx_role (role),
+    INDEX idx_is_verified (is_verified),
+    INDEX idx_password_changed_at (password_changed_at)
 );

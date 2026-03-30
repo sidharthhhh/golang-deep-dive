@@ -84,10 +84,12 @@ docker-clean: ## Clean Docker resources
 # Database migrations
 migrate-up: ## Run database migrations up
 	@echo "Running migrations..."
+	mysql -h localhost -u root -p -D auth_service < migrations/000_init_database.sql
 	mysql -h localhost -u root -p -D auth_service < migrations/001_create_users_table.sql
-	mysql -h localhost -u root -p -D auth_service < migrations/002_add_role_column.sql
 	mysql -h localhost -u root -p -D auth_service < migrations/003_create_token_blacklist.sql
 	mysql -h localhost -u root -p -D auth_service < migrations/004_create_password_reset_tokens.sql
+	mysql -h localhost -u root -p -D auth_service < migrations/005_add_indexes.sql
+	mysql -h localhost -u root -p -D auth_service < migrations/006_add_password_changed_at.sql
 
 migrate-down: ## Rollback database migrations
 	@echo "Rolling back migrations..."
@@ -99,16 +101,20 @@ migrate-down: ## Rollback database migrations
 k8s-deploy: ## Deploy to Kubernetes
 	$(KUBECTL) apply -f k8s/configmap.yaml
 	$(KUBECTL) apply -f k8s/secrets.yaml
+	$(KUBECTL) apply -f k8s/mysql.yaml
 	$(KUBECTL) apply -f k8s/deployment.yaml
 	$(KUBECTL) apply -f k8s/service.yaml
+	$(KUBECTL) apply -f k8s/pdb.yaml
 	$(KUBECTL) apply -f k8s/ingress.yaml
 	$(KUBECTL) apply -f k8s/hpa.yaml
 
 k8s-delete: ## Delete from Kubernetes
 	$(KUBECTL) delete -f k8s/hpa.yaml || true
 	$(KUBECTL) delete -f k8s/ingress.yaml || true
+	$(KUBECTL) delete -f k8s/pdb.yaml || true
 	$(KUBECTL) delete -f k8s/service.yaml || true
 	$(KUBECTL) delete -f k8s/deployment.yaml || true
+	$(KUBECTL) delete -f k8s/mysql.yaml || true
 	$(KUBECTL) delete -f k8s/secrets.yaml || true
 	$(KUBECTL) delete -f k8s/configmap.yaml || true
 

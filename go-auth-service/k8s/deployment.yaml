@@ -6,7 +6,7 @@ metadata:
     app: auth-service
     version: v1
 spec:
-  replicas: 3
+  replicas: 3  # HPA will manage this after initial deployment
   selector:
     matchLabels:
       app: auth-service
@@ -98,8 +98,14 @@ spec:
           runAsNonRoot: true
           runAsUser: 1000
           allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
           capabilities:
             drop:
             - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: tmp
+        emptyDir: {}
       restartPolicy: Always

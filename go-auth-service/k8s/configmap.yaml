@@ -6,4 +6,5 @@ data:
   mysql-host: "mysql-service"
   mysql-port: "3306"
   mysql-database: "auth_service"
-  cors-allowed-origins: "https://app.yourdomain.com,https://admin.yourdomain.com"
+  # TODO: Replace <NODE_IP> with your actual node IP (e.g. 192.168.1.54)
+  cors-allowed-origins: "http://localhost:3000,http://localhost:8080,http://auth.<NODE_IP>.nip.io"

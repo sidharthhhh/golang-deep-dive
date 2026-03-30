@@ -1,0 +1,166 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  labels:
+    app: mysql
+spec:
+  serviceName: mysql-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8.0
+        ports:
+        - containerPort: 3306
+          name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: auth-secrets
+              key: mysql-password
+        - name: MYSQL_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: auth-config
+              key: mysql-database
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        readinessProbe:
+          exec:
+            command:
+            - mysqladmin
+            - ping
+            - -h
+            - localhost
+            - -u
+            - root
+            - -p$(MYSQL_ROOT_PASSWORD)
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+        livenessProbe:
+          exec:
+            command:
+            - mysqladmin
+            - ping
+            - -h
+            - localhost
+            - -u
+            - root
+            - -p$(MYSQL_ROOT_PASSWORD)
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+        - name: init-scripts
+          mountPath: /docker-entrypoint-initdb.d
+      volumes:
+      - name: init-scripts
+        configMap:
+          name: mysql-init-scripts
+  volumeClaimTemplates:
+  - metadata:
+      name: mysql-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+  labels:
+    app: mysql
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3306
+    targetPort: 3306
+    protocol: TCP
+  selector:
+    app: mysql
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-init-scripts
+data:
+  000_init_database.sql: |
+    CREATE DATABASE IF NOT EXISTS auth_service;
+
+  001_create_users_table.sql: |
+    USE auth_service;
+    CREATE TABLE IF NOT EXISTS users (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        password_hash VARCHAR(255) NOT NULL,
+        role ENUM('user', 'admin', 'super_admin') DEFAULT 'user',
+        is_verified BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        password_changed_at TIMESTAMP NULL DEFAULT NULL,
+        INDEX idx_email (email),
+        INDEX idx_role (role),
+        INDEX idx_is_verified (is_verified),
+        INDEX idx_password_changed_at (password_changed_at)
+    );
+
+  003_create_token_blacklist.sql: |
+    USE auth_service;
+    CREATE TABLE IF NOT EXISTS token_blacklist (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        token_jti CHAR(36) NOT NULL UNIQUE,
+        user_id BIGINT NOT NULL,
+        blacklisted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expires_at TIMESTAMP NOT NULL,
+        INDEX idx_token_jti (token_jti),
+        INDEX idx_user_id (user_id),
+        INDEX idx_expires_at (expires_at),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+  004_create_password_reset_tokens.sql: |
+    USE auth_service;
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        user_id BIGINT NOT NULL,
+        token VARCHAR(255) NOT NULL UNIQUE,
+        used BOOLEAN DEFAULT FALSE,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_token (token),
+        INDEX idx_user_id (user_id),
+        INDEX idx_expires_at (expires_at),
+        INDEX idx_expires_used (expires_at, used),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+  005_add_indexes.sql: |
+    USE auth_service;
+    -- Base indexes are in 001; this adds composite indexes for cleanup
+    CREATE INDEX IF NOT EXISTS idx_token_blacklist_expires ON token_blacklist(expires_at, blacklisted_at);
+    CREATE INDEX IF NOT EXISTS idx_password_reset_expires ON password_reset_tokens(expires_at, used);
+
+  006_add_password_changed_at.sql: |
+    USE auth_service;
+    -- password_changed_at column is already included in 001 users table definition
